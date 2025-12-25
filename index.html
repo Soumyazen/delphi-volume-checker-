@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { 
+            --neon-pink: #ff10f0; 
+            --dark-pink: #470043;
+            --bg-dark: #0d000d; 
+        }
+        
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-dark); 
+            color: white; 
+            padding: 20px; 
+            margin: 0; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Profile Header */
+        .profile-card { text-align: center; margin-bottom: 30px; }
+        .avatar { 
+            width: 100px; height: 100px; border-radius: 50%; 
+            border: 3px solid var(--neon-pink); 
+            box-shadow: 0 0 20px var(--neon-pink); 
+            object-fit: cover; margin-bottom: 10px;
+        }
+
+        .username { 
+            font-size: 1.8rem; font-weight: bold; 
+            color: white; text-shadow: 0 0 10px var(--neon-pink);
+            margin: 5px 0; 
+        }
+
+        .twitter-btn { 
+            display: inline-flex; align-items: center;
+            background: rgba(255, 16, 240, 0.1); color: var(--neon-pink);
+            padding: 8px 18px; border: 1px solid var(--neon-pink);
+            border-radius: 25px; text-decoration: none; font-size: 14px;
+            transition: 0.3s; margin-top: 10px;
+        }
+
+        /* Main Card */
+        .card { 
+            width: 100%; max-width: 400px;
+            background: rgba(22, 2, 22, 0.8); border: 1px solid var(--neon-pink);
+            border-radius: 20px; padding: 30px; 
+            box-shadow: 0 0 25px rgba(255, 16, 240, 0.2);
+            box-sizing: border-box; margin-bottom: 30px;
+        }
+
+        input { 
+            width: 100%; box-sizing: border-box; padding: 15px; margin: 20px 0; 
+            border-radius: 12px; border: 1px solid var(--dark-pink); 
+            background: #1a001a; color: white; outline: none; text-align: center;
+        }
+        
+        .main-btn { 
+            width: 100%; padding: 15px; background: var(--neon-pink); 
+            color: black; border: none; border-radius: 12px; 
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .share-section {
+            display: none; /* Hidden until scan is done */
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--dark-pink);
+        }
+
+        .share-btn {
+            background: #fff;
+            color: #000;
+            padding: 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .volume-display {
+            display: block; font-size: 2.2rem; color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink); margin: 10px 0;
+        }
+
+        /* Flicker Animation */
+        footer {
+            margin-top: auto; padding: 20px; font-size: 14px;
+            color: white; letter-spacing: 3px; text-transform: uppercase;
+            animation: flicker 3s linear infinite;
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px var(--neon-pink), 0 0 40px var(--neon-pink);
+                opacity: 1;
+            }
+            20%, 24%, 55% { text-shadow: none; opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="profile-card">
+        <img src="https://pbs.twimg.com/profile_images/1984591409488543748/-4rPU_rG.jpg" class="avatar" alt="Som">
+        <div class="username">Som</div>
+        <a href="https://x.com/somvbn" class="twitter-btn" target="_blank">
+            <i class="fab fa-twitter"></i> @somvbn
+        </a>
+    </div>
+
+    <div class="card">
+        <h2 style="color:var(--neon-pink); text-align:center; margin:0;">Delphi Tracker</h2>
+        <input type="text" id="wallet" placeholder="Enter Wallet Address (0x...)">
+        <button class="main-btn" onclick="scan()">Scan Transactions</button>
+        
+        <div id="output" style="margin-top:20px; text-align:center;">Results appear here...</div>
+
+        <div id="shareArea" class="share-section">
+            <button class="main-btn" style="background:transparent; border:1px solid white; color:white; font-size:12px;" onclick="copyResults()">
+                <i class="fas fa-copy"></i> Copy Result
+            </button>
+            <a id="tweetLink" href="#" target="_blank" class="share-btn">
+                <i class="fab fa-x-twitter"></i> Share on X
+            </a>
+        </div>
+    </div>
+
+    <footer>Created by Som</footer>
+
+    <script>
+        let currentVol = "0";
+
+        async function scan() {
+            const addr = document.getElementById('wallet').value.trim();
+            const out = document.getElementById('output');
+            const share = document.getElementById('shareArea');
+            
+            if(!addr) return alert("Paste address!");
+            out.innerHTML = "✨ Scanning Gensyn...";
+            share.style.display = "none";
+
+            try {
+                const url = `https://gensyn-testnet.explorer.alchemy.com/api?module=account&action=tokentx&address=${addr}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if(data.result && data.result.length > 0) {
+                    let totalWei = BigInt(0);
+                    data.result.forEach(tx => totalWei += BigInt(tx.value || 0));
+                    currentVol = (Number(totalWei) / 10**18).toFixed(2);
+                    
+                    out.innerHTML = `Trades: ${data.result.length}<br><span class="volume-display">${currentVol} $TEST</span>`;
+                    
+                    // Show Share section & update Twitter link
+                    share.style.display = "block";
+                    const tweetText = encodeURIComponent(`My Gensyn Delphi volume is ${currentVol} $TEST! 🚀\n\nCheck yours here: `);
+                    document.getElementById('tweetLink').href = `https://twitter.com/intent/tweet?text=${tweetText}`;
+                } else { 
+                    out.innerHTML = "❌ No trades found."; 
+                }
+            } catch (e) { out.innerHTML = "⚠️ API Error."; }
+        }
+
+        function copyResults() {
+            const text = `My Gensyn Delphi Volume: ${currentVol} $TEST`;
+            navigator.clipboard.writeText(text);
+            alert("Copied to clipboard!");
+        }
+    </script>
+</body>
+</html>
